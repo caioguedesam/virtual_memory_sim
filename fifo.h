@@ -1,9 +1,9 @@
 #ifndef TP2_SO_FIFO
 #define TP2_SO_FIFO
 
-typedef struct {
-    unsigned page_number;
-    unsigned* next;
+typedef struct queue_element {
+    unsigned page_addr;
+    struct queue_element* next;
 } queue_element;
 
 typedef struct {
@@ -11,7 +11,9 @@ typedef struct {
     queue_element* last;
 } queue;
 
-void push(queue* q);
-unsigned pop(queue *q);
+queue* init_queue();
+void delete_queue(queue* q);
+void push_queue(queue* q, unsigned i);
+unsigned pop_queue(queue *q);
 
 #endif
