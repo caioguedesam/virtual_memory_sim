@@ -1,1 +1,6 @@
 tp2virtual
+tp2-files/
+test.txt
+*.o
+*.a
+*.s
