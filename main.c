@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "fifo.h"
 
 #define TRUE '1'
 #define FALSE '0'
@@ -44,6 +45,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
     unsigned fault_count = 0;
     unsigned dirty_count = 0;
 
+    queue* fifo_queue = init_queue(); 
+
     while(fscanf(fp, "%x %c", &addr, &rw) != EOF) {
         // ERRO: leu linha sem comando R (read) ou W (write)
         if(rw != READ && rw != WRITE) {
@@ -52,9 +55,9 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
         }
 
         unsigned addr_page = addr >> page_offset;
-        printf("Addr: %u, page: %u, op: %c\n", addr, addr_page, rw);
-        printf("Page table entry at %u: ", addr_page);
-        printf("VALIDO: %c, SUJO: %c\n", page_table[addr_page].valid, page_table[addr_page].dirty);
+        // printf("Addr: %u, page: %u, op: %c\n", addr, addr_page, rw);
+        // printf("Page table entry at %u: ", addr_page);
+        // printf("VALIDO: %c, SUJO: %c\n", page_table[addr_page].valid, page_table[addr_page].dirty);
         
         // Page hit
         if(page_table[addr_page].valid == TRUE) {
@@ -71,18 +74,39 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 if(rw == WRITE) {
                     page_table[addr_page].dirty = TRUE;
                 }
+                // TODO: implementar outros algoritmos de substituição
+                push_queue(fifo_queue, addr_page);
+
+                mem_filled ++;
             }
             else {
                 // Quando todos os endereços da memória física foram mapeados na tabela,
                 // substituição começa.
-                unsigned addr_sub = 1;// TODO: INSERT ALGO HERE
-                
+
+                // TODO: implementar outros algoritmos de substituição
+                unsigned addr_sub = pop_queue(fifo_queue);
+
+                // Substituindo
+                page_table[addr_sub].valid = FALSE;
+                if(page_table[addr_sub].dirty == TRUE) {
+                    dirty_count++;
+                    page_table[addr_sub].dirty = FALSE;
+                }
+                page_table[addr_page].valid = TRUE;
+                if(rw == WRITE) {
+                    page_table[addr_page].dirty = TRUE;
+                }
+
+                // TODO: implementar outros algoritmos de substituição
+                push_queue(fifo_queue, addr_page);
             }
         }
-
-        printf("Total page faults: %u\n", fault_count);
     }
 
+    printf("Total page faults: %u\n", fault_count);
+    printf("Total dirty writes: %u\n", dirty_count);
+
+    delete_queue(fifo_queue);
     fclose(fp);
 }
 
@@ -93,6 +117,7 @@ int main(int argc, char **argv) {
     unsigned page_count = get_page_count(get_page_addr(page_offset));
     unsigned frame_count = atoi(argv[4]) / atoi(argv[3]);
     printf("Page count: %u\n", page_count);
+    printf("Frame count: %u\n", frame_count);
 
     // Inicializando tabela de páginas
     page_table_entry* page_table = (page_table_entry*)malloc(page_count * sizeof(page_table_entry));
