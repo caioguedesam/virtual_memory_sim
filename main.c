@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <unistd.h>
 #include "fifo.h"
 
 #define TRUE '1'
@@ -47,6 +49,9 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
 
     queue* fifo_queue = init_queue(); 
 
+    struct timespec start, end;
+    clock_gettime(CLOCK_REALTIME, &start);
+
     while(fscanf(fp, "%x %c", &addr, &rw) != EOF) {
         // ERRO: leu linha sem comando R (read) ou W (write)
         if(rw != READ && rw != WRITE) {
@@ -55,9 +60,6 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
         }
 
         unsigned addr_page = addr >> page_offset;
-        // printf("Addr: %u, page: %u, op: %c\n", addr, addr_page, rw);
-        // printf("Page table entry at %u: ", addr_page);
-        // printf("VALIDO: %c, SUJO: %c\n", page_table[addr_page].valid, page_table[addr_page].dirty);
         
         // Page hit
         if(page_table[addr_page].valid == TRUE) {
@@ -103,8 +105,13 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
         }
     }
 
+    clock_gettime(CLOCK_REALTIME, &end);
+    double t = 1.e+6 * (double)(end.tv_sec - start.tv_sec) + 1.e-3 * (double)(end.tv_nsec - start.tv_nsec);
+    t = t / 1.e+6;
+
     printf("Total page faults: %u\n", fault_count);
     printf("Total dirty writes: %u\n", dirty_count);
+    printf("Execution time: %.5lfs\n", t);
 
     delete_queue(fifo_queue);
     fclose(fp);
