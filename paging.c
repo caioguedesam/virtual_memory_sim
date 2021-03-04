@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "fifo.h"
+#include "paging.h"
 
 queue* init_queue() {
     queue* q = (queue*)malloc(sizeof(queue));
@@ -43,4 +43,14 @@ unsigned pop_queue(queue *q) {
     unsigned page_addr = element->page_addr;
     free(element);
     return page_addr;
+}
+
+unsigned get_lru(page_table_entry* page_table, unsigned* frame_table, unsigned frame_count) {
+    unsigned lru = frame_table[0];
+    for(unsigned i = 0; i < frame_count; i++) {
+        unsigned page = frame_table[i];
+        if(page_table[page].timestamp < page_table[lru].timestamp)
+            lru = page;
+    }
+    return lru;
 }

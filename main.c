@@ -5,12 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "const.h"
-#include "fifo.h"
-
-typedef struct {
-    short frame_addr;
-    char dirty;
-} page_table_entry;
+#include "paging.h"
 
 // Número de bits do offset baseado no tamanho da página
 unsigned get_page_offset(unsigned page_size) {
@@ -49,7 +44,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
         frame_table[i] = INVALID;
     }
 
-    queue* fifo_queue = init_queue(); 
+    queue* fifo_queue = init_queue();
+    long lru_timestamp = 0; 
 
     struct timespec start, end;
     clock_gettime(CLOCK_REALTIME, &start);
@@ -78,9 +74,10 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 if(rw == WRITE) {
                     page_table[addr_page].dirty = TRUE;
                 }
-                // TODO: implementar outros algoritmos de substituição
+                
                 if(strcmp(replace, FIFO) == 0)
                     push_queue(fifo_queue, addr_page);
+
 
                 frame_table[mem_filled] = addr_page;
                 mem_filled++;
@@ -89,10 +86,12 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 // Quando todos os endereços da memória física foram mapeados na tabela,
                 // substituição começa.
 
-                // TODO: implementar outros algoritmos de substituição
+                // Selecionando via algoritmo de substituição
                 unsigned addr_sub;
                 if(strcmp(replace, FIFO) == 0)
                     addr_sub = pop_queue(fifo_queue);
+                else if(strcmp(replace, LRU) == 0)
+                    addr_sub = get_lru(page_table, frame_table, frame_count);
                 else if(strcmp(replace, RANDOM) == 0)
                     addr_sub = frame_table[rand() % (frame_count - 1)];
 
@@ -107,14 +106,14 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 if(rw == WRITE) {
                     page_table[addr_page].dirty = TRUE;
                 }
-
-                // TODO: implementar outros algoritmos de substituição
+                
                 if(strcmp(replace, FIFO) == 0)
                     push_queue(fifo_queue, addr_page);
 
                 frame_table[tmp] = addr_page;
             }
         }
+        page_table[addr_page].timestamp = lru_timestamp++;
     }
 
     clock_gettime(CLOCK_REALTIME, &end);
@@ -148,6 +147,7 @@ int main(int argc, char **argv) {
     for(int i = 0; i < page_count; i++) {
         page_table[i].frame_addr = INVALID;
         page_table[i].dirty = FALSE;
+        page_table[i].timestamp = INVALID;
     }
 
     // Lendo e operando sobre o arquivo

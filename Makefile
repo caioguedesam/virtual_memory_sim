@@ -1,4 +1,4 @@
 all:
-	gcc -c fifo.c
-	gcc main.c fifo.o -o tp2virtual -lm
+	gcc -c paging.c
+	gcc main.c paging.o -o tp2virtual -lm
 	rm *.o
