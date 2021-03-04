@@ -81,7 +81,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 push_queue(fifo_queue, addr_page);
 
                 frame_table[mem_filled] = addr_page;
-                mem_filled ++;
+                mem_filled++;
             }
             else {
                 // Quando todos os endereços da memória física foram mapeados na tabela,
@@ -118,12 +118,16 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
     printf("Total dirty writes: %u\n", dirty_count);
     printf("Execution time: %.5lfs\n", t);
 
+
     free(frame_table);
     delete_queue(fifo_queue);
     fclose(fp);
 }
 
 int main(int argc, char **argv) {
+
+    time_t t;
+    srand((unsigned)time(&t));
 
     // tp2virtual [algo.] [arquivo] [tamanho pág.] [memória]
     unsigned page_offset = get_page_offset(atoi(argv[3]) * 1024);
