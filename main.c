@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
 #include "const.h"
 #include "fifo.h"
 
@@ -78,7 +79,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                     page_table[addr_page].dirty = TRUE;
                 }
                 // TODO: implementar outros algoritmos de substituição
-                push_queue(fifo_queue, addr_page);
+                if(strcmp(replace, FIFO) == 0)
+                    push_queue(fifo_queue, addr_page);
 
                 frame_table[mem_filled] = addr_page;
                 mem_filled++;
@@ -88,7 +90,11 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 // substituição começa.
 
                 // TODO: implementar outros algoritmos de substituição
-                unsigned addr_sub = pop_queue(fifo_queue);
+                unsigned addr_sub;
+                if(strcmp(replace, FIFO) == 0)
+                    addr_sub = pop_queue(fifo_queue);
+                else if(strcmp(replace, RANDOM) == 0)
+                    addr_sub = frame_table[rand() % (frame_count - 1)];
 
                 // Substituindo
                 short tmp = page_table[addr_sub].frame_addr;
@@ -103,7 +109,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 }
 
                 // TODO: implementar outros algoritmos de substituição
-                push_queue(fifo_queue, addr_page);
+                if(strcmp(replace, FIFO) == 0)
+                    push_queue(fifo_queue, addr_page);
 
                 frame_table[tmp] = addr_page;
             }
