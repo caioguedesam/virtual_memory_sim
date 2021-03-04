@@ -125,9 +125,10 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
     double t = 1.e+6 * (double)(end.tv_sec - start.tv_sec) + 1.e-3 * (double)(end.tv_nsec - start.tv_nsec);
     t = t / 1.e+6;
 
-    printf("Total page faults: %u\n", fault_count);
-    printf("Total dirty writes: %u\n", dirty_count);
-    printf("Execution time: %.5lfs\n", t);
+    printf("Total de page faults: %u\n", fault_count);
+    printf("Total de paginas sujas escritas: %u\n", dirty_count);
+    printf("Tempo de execucao: %.5lfs\n", t);
+    // printf("%u,%u,%.5lf\n", fault_count, dirty_count, t);
 
 
     free(frame_table);
@@ -144,8 +145,8 @@ int main(int argc, char **argv) {
     unsigned page_offset = get_page_offset(atoi(argv[3]) * 1024);
     unsigned page_count = get_page_count(get_page_addr(page_offset));
     unsigned frame_count = atoi(argv[4]) / atoi(argv[3]);
-    printf("Page count: %u\n", page_count);
-    printf("Frame count: %u\n", frame_count);
+    printf("Numero de paginas (mem. virtual): %u\n", page_count);
+    printf("Numero de quadros (mem. fisica): %u\n", frame_count);
 
     // Inicializando tabela de páginas
     page_table_entry* page_table = (page_table_entry*)malloc(page_count * sizeof(page_table_entry));
@@ -155,6 +156,8 @@ int main(int argc, char **argv) {
         page_table[i].chance = FALSE;
         page_table[i].timestamp = INVALID;
     }
+
+    // printf("%s,%s,%s,%s,", argv[1], argv[2], argv[3], argv[4]);
 
     // Lendo e operando sobre o arquivo
     read_file(argv[2], frame_count, page_table, page_offset, argv[1]);
