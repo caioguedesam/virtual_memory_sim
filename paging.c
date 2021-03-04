@@ -54,3 +54,17 @@ unsigned get_lru(page_table_entry* page_table, unsigned* frame_table, unsigned f
     }
     return lru;
 }
+
+unsigned get_second_chance_next(page_table_entry* page_table, unsigned* frame_table, unsigned* second_chance_p, unsigned frame_count) {
+    while(1) {
+        unsigned scp_page = frame_table[*second_chance_p];
+        if(page_table[scp_page].chance == TRUE) {
+            page_table[scp_page].chance = FALSE;
+            *second_chance_p = (*second_chance_p + 1) % frame_count;
+        }
+        else {
+            *second_chance_p = (*second_chance_p + 1) % frame_count;
+            return scp_page;
+        }
+    }
+}

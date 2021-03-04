@@ -46,6 +46,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
 
     queue* fifo_queue = init_queue();
     long lru_timestamp = 0; 
+    unsigned second_chance_p = 0;
 
     struct timespec start, end;
     clock_gettime(CLOCK_REALTIME, &start);
@@ -64,6 +65,9 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
             if(rw == WRITE) {
                 page_table[addr_page].dirty = TRUE;
             }
+            if(strcmp(replace, SECOND) == 0)
+                page_table[addr_page].chance = TRUE;
+                //page_table[addr_page].chance = (page_table[addr_page].chance == TRUE) ? FALSE : TRUE;
         }
         // Page fault
         else {
@@ -78,7 +82,6 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 if(strcmp(replace, FIFO) == 0)
                     push_queue(fifo_queue, addr_page);
 
-
                 frame_table[mem_filled] = addr_page;
                 mem_filled++;
             }
@@ -92,6 +95,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                     addr_sub = pop_queue(fifo_queue);
                 else if(strcmp(replace, LRU) == 0)
                     addr_sub = get_lru(page_table, frame_table, frame_count);
+                else if(strcmp(replace, SECOND) == 0)
+                    addr_sub = get_second_chance_next(page_table, frame_table, &second_chance_p, frame_count);
                 else if(strcmp(replace, RANDOM) == 0)
                     addr_sub = frame_table[rand() % (frame_count - 1)];
 
@@ -147,6 +152,7 @@ int main(int argc, char **argv) {
     for(int i = 0; i < page_count; i++) {
         page_table[i].frame_addr = INVALID;
         page_table[i].dirty = FALSE;
+        page_table[i].chance = FALSE;
         page_table[i].timestamp = INVALID;
     }
 
