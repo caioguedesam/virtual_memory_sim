@@ -3,13 +3,8 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
+#include "const.h"
 #include "fifo.h"
-
-#define TRUE '1'
-#define FALSE '0'
-#define INVALID -1
-#define READ 'R'
-#define WRITE 'W'
 
 typedef struct {
     short frame_addr;
@@ -37,7 +32,7 @@ unsigned get_page_count(unsigned page_addr) { return pow(2, page_addr); }
 // Número de quadros baseado no tamanho do quadro e na memória disponível (em kB)
 unsigned get_frame_count(unsigned frame_size, unsigned memory_size) { return memory_size / frame_size; }
 
-void read_file(char* filename, unsigned frame_count, page_table_entry* page_table, unsigned page_offset) {
+void read_file(char* filename, unsigned frame_count, page_table_entry* page_table, unsigned page_offset, char* replace) {
     FILE *fp;
     fp = fopen(filename, "r");
 
@@ -47,6 +42,11 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
     unsigned mem_filled = 0;
     unsigned fault_count = 0;
     unsigned dirty_count = 0;
+
+    unsigned* frame_table = (unsigned*)malloc(frame_count * sizeof(unsigned));
+    for(int i = 0; i < frame_count; i++) {
+        frame_table[i] = INVALID;
+    }
 
     queue* fifo_queue = init_queue(); 
 
@@ -80,6 +80,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 // TODO: implementar outros algoritmos de substituição
                 push_queue(fifo_queue, addr_page);
 
+                frame_table[mem_filled] = addr_page;
                 mem_filled ++;
             }
             else {
@@ -103,6 +104,8 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
 
                 // TODO: implementar outros algoritmos de substituição
                 push_queue(fifo_queue, addr_page);
+
+                frame_table[tmp] = addr_page;
             }
         }
     }
@@ -115,6 +118,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
     printf("Total dirty writes: %u\n", dirty_count);
     printf("Execution time: %.5lfs\n", t);
 
+    free(frame_table);
     delete_queue(fifo_queue);
     fclose(fp);
 }
@@ -136,7 +140,7 @@ int main(int argc, char **argv) {
     }
 
     // Lendo e operando sobre o arquivo
-    read_file(argv[2], frame_count, page_table, page_offset);
+    read_file(argv[2], frame_count, page_table, page_offset, argv[1]);
 
     // Liberando memória alocada
     free(page_table);
