@@ -7,11 +7,12 @@
 
 #define TRUE '1'
 #define FALSE '0'
+#define INVALID -1
 #define READ 'R'
 #define WRITE 'W'
 
 typedef struct {
-    char valid;
+    short frame_addr;
     char dirty;
 } page_table_entry;
 
@@ -62,7 +63,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
         unsigned addr_page = addr >> page_offset;
         
         // Page hit
-        if(page_table[addr_page].valid == TRUE) {
+        if(page_table[addr_page].frame_addr != INVALID) {
             if(rw == WRITE) {
                 page_table[addr_page].dirty = TRUE;
             }
@@ -72,7 +73,7 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
             fault_count++;
             // Enquanto todos os endereços físicos não forem mapeados, não é necessário substituir.
             if(mem_filled < frame_count) {
-                page_table[addr_page].valid = TRUE;
+                page_table[addr_page].frame_addr = mem_filled;
                 if(rw == WRITE) {
                     page_table[addr_page].dirty = TRUE;
                 }
@@ -89,12 +90,13 @@ void read_file(char* filename, unsigned frame_count, page_table_entry* page_tabl
                 unsigned addr_sub = pop_queue(fifo_queue);
 
                 // Substituindo
-                page_table[addr_sub].valid = FALSE;
+                short tmp = page_table[addr_sub].frame_addr;
+                page_table[addr_sub].frame_addr = INVALID;
                 if(page_table[addr_sub].dirty == TRUE) {
                     dirty_count++;
                     page_table[addr_sub].dirty = FALSE;
                 }
-                page_table[addr_page].valid = TRUE;
+                page_table[addr_page].frame_addr = tmp;
                 if(rw == WRITE) {
                     page_table[addr_page].dirty = TRUE;
                 }
@@ -129,7 +131,7 @@ int main(int argc, char **argv) {
     // Inicializando tabela de páginas
     page_table_entry* page_table = (page_table_entry*)malloc(page_count * sizeof(page_table_entry));
     for(int i = 0; i < page_count; i++) {
-        page_table[i].valid = FALSE;
+        page_table[i].frame_addr = INVALID;
         page_table[i].dirty = FALSE;
     }
 
